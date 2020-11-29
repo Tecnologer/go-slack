@@ -15,10 +15,11 @@ const apiURL = "https://slack.com/api/%s"
 
 //Slack is the base struct for slack data
 type Slack struct {
-	CmdPrefix string
-	token     string
-	allMsg    func(*response.Message)
-	commands  map[string]func(*response.Message)
+	AcceptBotsMessage bool
+	CmdPrefix         string
+	token             string
+	allMsg            func(*response.EventResponse)
+	commands          map[string]func(*response.EventResponse)
 }
 
 //New creates new instance of Slack
@@ -27,7 +28,7 @@ func New(token string) *Slack {
 		CmdPrefix: "/",
 		token:     token,
 		allMsg:    nil,
-		commands:  make(map[string]func(*response.Message)),
+		commands:  make(map[string]func(*response.EventResponse)),
 	}
 }
 
@@ -66,17 +67,25 @@ func (s *Slack) SendTextMessage(channel, msg string) error {
 	return nil
 }
 
-func (s *Slack) StartWithWebhook(url string, port int) {
-	chanUpdates, err := s.setWeebhook(url, port)
+func (s *Slack) StartWithWebhook(port int) {
+	chanUpdates, err := s.setWeebhook(port)
 	if err != nil {
 		logrus.WithError(err).Error("register for updates")
 		return
 	}
 	for update := range chanUpdates {
+		if !s.AcceptBotsMessage && update.IsBot() {
+			continue
+		}
+
 		s.validateCommand(update)
 
 		if s.allMsg != nil {
 			s.allMsg(update)
 		}
 	}
+}
+
+func (s *Slack) AllEvents(action func(*response.EventResponse)) {
+	s.allMsg = action
 }
