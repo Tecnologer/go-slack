@@ -8,7 +8,7 @@ Slack API wrapper with Go
     var s *slack.Slack
 
     func main() {
-        s = slack.New("slackToken")
+        s = slack.New("<slackToken>")
 
         err := s.SetCommand("hola", sayHi)
         if err != nil {
