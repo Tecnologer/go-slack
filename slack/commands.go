@@ -7,13 +7,13 @@ import (
 	"github.com/tecnologer/go-slack/slack/models/response"
 )
 
-func (s *Slack) SetCommand(cmd string, action func(*response.Message)) error {
+func (s *Slack) SetCommand(cmd string, action func(*response.EventResponse)) error {
 	if action == nil {
 		return fmt.Errorf("callback function is required for a command")
 	}
 
 	if s.commands == nil {
-		s.commands = make(map[string]func(*response.Message))
+		s.commands = make(map[string]func(*response.EventResponse))
 	}
 
 	if !strings.HasPrefix(cmd, s.CmdPrefix) {
@@ -24,7 +24,7 @@ func (s *Slack) SetCommand(cmd string, action func(*response.Message)) error {
 	return nil
 }
 
-func (s *Slack) validateCommand(update *response.Message) {
+func (s *Slack) validateCommand(update *response.EventResponse) {
 	cmd := getCmdFromMsg(update)
 	if cmd == "" {
 		return
@@ -35,12 +35,12 @@ func (s *Slack) validateCommand(update *response.Message) {
 	}
 }
 
-func getCmdFromMsg(msg *response.Message) string {
+func getCmdFromMsg(msg *response.EventResponse) string {
 	if msg == nil {
 		return ""
 	}
 
-	msgParts := strings.Split(msg.Text, " ")
+	msgParts := strings.Split(strings.Trim(msg.GetMessageTxt(), " "), " ")
 	if len(msgParts) == 0 {
 		return ""
 	}
