@@ -35,15 +35,25 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Error("set command hola")
 	}
-	err = s.SetCommand("hora", getTime)
-
-	err = addCustomAction(`^hola.*`, sayHi)
-	if err != nil {
-		logrus.WithError(err).Error("set custom action")
-	}
+	_ = s.SetCommand("hora", getTime)
+	configCustomAction()
 
 	s.AllEvents(allEvents)
 	s.StartWithWebhook(*port)
+}
+
+func configCustomAction() {
+	actionsMap := map[string]func(*response.EventResponse){
+		`^hola.*`:                             sayHi,
+		`(?mi)(dime la hora|¿?que hora es\?)`: getTime,
+	}
+
+	for expr, action := range actionsMap {
+		err := addCustomAction(expr, action)
+		if err != nil {
+			logrus.WithError(err).WithField("expr", expr).Error("set custom action")
+		}
+	}
 }
 
 func sayHi(event *response.EventResponse) {
@@ -60,7 +70,8 @@ func getTime(event *response.EventResponse) {
 	if isUtc {
 		t = time.Now().UTC()
 	}
-	err := s.SendTextMessage(event.GetChannel(), fmt.Sprintf("La hora es :%v", t))
+	ts := t.Format("Mon, 02 Jan 2006 03:04:05.999 PM -07:00")
+	err := s.SendTextMessage(event.GetChannel(), fmt.Sprintf("La hora es: %s", ts))
 	if err != nil {
 		logrus.WithError(err).Error("sending message")
 	}
